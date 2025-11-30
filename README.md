@@ -1,24 +1,20 @@
-# Corthrex CXM — Permanent Memory for Local AI (Actually Works)
+# Corthrex CXM — Permanent Local Memory That Actually Works
 
-No SQLite. No cloud. One 58 KB file that never forgets.
+One 58 KB file. Zero dependencies. Remembers forever.
 
-**One 58 KB file. Zero dependencies. Remembers forever.**
-
-Close your laptop for a week → come back → it still knows your name, eye color, what you hate, everything.
+Close your laptop for a week → come back → it still knows your name, eye color, everything.
 
 No SQLite • No vector DB • No background server • No cloud
 
-**Live demo (recorded November 29, 2025):**  
-https://youtube.com/@corthrex
+Live demo (November 29, 2025):  
+https://youtu.be/rxRsgQL1AuQ
 
-### 30-second start (Windows)
+30-second start (Windows)
+1. Install Ollama → ollama pull llama3.2:latest
+2. Double-click START CORTHREX - FULL.bat (first time)
+3. Double-click START CORTHREX - QUICK.bat every day
 
-```bat
-1. Install Ollama → https://ollama.com
-   ollama pull llama3.2:latest
+Built 100% solo by Charles “Chuck” Stevens  
+Wisconsin · 2025 · Apache 2.0
 
-2. First time only → double-click:
-   START CORTHREX - FULL.bat
-
-3. Every day after → double-click:
-   START CORTHREX - QUICK.bat
+Welcome to permanent local memory.
