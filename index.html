@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corthrex AI</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Add specific styles for the status indicator directly here to ensure they load */
+        .status-indicator.online .status-dot { background: #4ade80; box-shadow: 0 0 8px #4ade80; }
+        .status-indicator.offline .status-dot { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+        .status-indicator.offline { color: #ef4444; border-color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <div class="logo"><i class="fas fa-layer-group"></i> CORTHREX AI</div>
+            <div class="status-indicator offline" id="mainStatus">
+                <div class="status-dot"></div><span id="statusText">Initializing...</span>
+            </div>
+        </div>
+
+        <div class="left-panel">
+            <div class="panel-section">
+                <div class="section-title">Model Selection</div>
+                <select id="modelSelect" class="corthrex-input"><option value="">Loading...</option></select>
+                <button id="newChatBtn" class="btn-action primary" style="margin-top:10px;">
+                    <i class="fas fa-plus"></i> New Chat
+                </button>
+            </div>
+            <div class="panel-section">
+                <div class="section-title">Parameters</div>
+                <div class="param-row"><span>Temperature</span><span id="tempVal" class="param-val">0.7</span></div>
+                <input type="range" id="tempSlider" min="0" max="2" step="0.1" value="0.7" oninput="document.getElementById('tempVal').innerText = this.value">
+                <div class="param-row"><span>Top P</span><span id="topPVal" class="param-val">0.9</span></div>
+                <input type="range" id="topPSlider" min="0" max="1" step="0.05" value="0.9" oninput="document.getElementById('topPVal').innerText = this.value">
+                <div class="param-row" style="margin-bottom: 5px;"><span>Context Length</span></div>
+                <input type="number" id="ctxInput" class="corthrex-input" value="4096" step="512">
+            </div>
+            <div class="panel-section">
+                <div class="section-title">System Prompt</div>
+                <textarea id="sysPrompt" class="corthrex-input" placeholder="You are a helpful AI..."></textarea>
+            </div>
+        </div>
+
+        <div class="center-panel">
+            <div class="chat-messages" id="chatMessages">
+                <div class="welcome-screen">
+                    <i class="fas fa-fingerprint"></i>
+                    <h2>Initialize Corthrex</h2>
+                    <p>Memory System Online.</p>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <div class="input-container">
+                    <input type="text" class="message-input" id="messageInput" placeholder="Enter command or query...">
+                    <button class="send-btn" id="sendBtn"><i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="hint-box">
+                <i class="fas fa-terminal"></i> Type <code>helpme</code> for commands.
+            </div>
+
+            <div class="stats-box">
+                <div class="stats-header">Corthrex Memory Stats</div>
+                <div class="stat-row"><span class="stat-label">Total Records</span><span class="stat-value" id="statRecords">0</span></div>
+                <div class="stat-row"><span class="stat-label">File Size</span><span class="stat-value" id="statSize">0 B</span></div>
+                <div class="stat-row"><span class="stat-label">Status</span><span class="stat-value" id="statStatus">Unknown</span></div>
+            </div>
+
+            <div class="stats-box" style="border-color: #6366f1; background: rgba(99, 102, 241, 0.03);">
+                <div class="stats-header" style="color: #6366f1; border-color: rgba(99, 102, 241, 0.2);">IO Performance</div>
+                <div class="stat-row"><span class="stat-label">Write</span><span class="stat-value" id="benchWrite">--</span></div>
+                <div class="stat-row"><span class="stat-label">Read</span><span class="stat-value" id="benchRead">--</span></div>
+                <div class="stat-row"><span class="stat-label">Result</span><span class="stat-value" id="benchResult">--</span></div>
+                <button id="runBenchBtn" class="btn-action" style="margin-top: 10px; border: 1px solid #6366f1; color: #a5b4fc;">
+                    <i class="fas fa-tachometer-alt"></i> Run Stress Test
+                </button>
+            </div>
+
+            <button class="btn-action" onclick="location.reload()">
+                <i class="fas fa-eraser"></i> Clear Chat
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const els = {
+            chat: document.getElementById('chatMessages'),
+            input: document.getElementById('messageInput'),
+            btn: document.getElementById('sendBtn'),
+            modelSelect: document.getElementById('modelSelect'),
+            newChatBtn: document.getElementById('newChatBtn'),
+            temp: document.getElementById('tempSlider'),
+            topP: document.getElementById('topPSlider'),
+            ctx: document.getElementById('ctxInput'),
+            sys: document.getElementById('sysPrompt'),
+            statusIndicator: document.getElementById('mainStatus'),
+            statusText: document.getElementById('statusText'),
+            stats: {
+                records: document.getElementById('statRecords'),
+                size: document.getElementById('statSize'),
+                status: document.getElementById('statStatus')
+            }
+        };
+
+        // Load Models
+        fetch('/api/tags').then(r=>r.json()).then(d => {
+            els.modelSelect.innerHTML = '<option value="">Select Model...</option>';
+            d.models.forEach(m => els.modelSelect.add(new Option(m.name, m.name)));
+        }).catch(e => {
+            console.log("Model fetch failed - likely offline");
+        });
+
+        // LIVE POLL: Checks Backend + Ollama Status every 2s
+        setInterval(async () => {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                
+                // Update File Stats
+                els.stats.size.textContent = data.size;
+                els.stats.records.textContent = data.blocks;
+                els.stats.status.textContent = "Active";
+
+                // Update Header Status Light (Red/Green)
+                if (data.ollama_online) {
+                    els.statusIndicator.className = 'status-indicator online';
+                    els.statusText.textContent = 'System Online';
+                } else {
+                    els.statusIndicator.className = 'status-indicator offline';
+                    els.statusText.textContent = 'Ollama Offline';
+                }
+            } catch(e) {
+                // If Flask completely crashes
+                els.statusIndicator.className = 'status-indicator offline';
+                els.statusText.textContent = 'Connection Lost';
+            }
+        }, 2000);
+
+        // BENCHMARK LOGIC
+        const benchBtn = document.getElementById('runBenchBtn');
+        const benchUI = {
+            write: document.getElementById('benchWrite'),
+            read: document.getElementById('benchRead'),
+            res: document.getElementById('benchResult')
+        };
+
+        benchBtn.onclick = async () => {
+            benchBtn.disabled = true;
+            benchBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Stress Testing...';
+            try {
+                const res = await fetch('/api/benchmark', {method: 'POST'});
+                const data = await res.json();
+                benchUI.write.innerText = data.write_speed;
+                benchUI.read.innerText = data.read_speed;
+                benchUI.res.innerText = data.status;
+                benchUI.res.style.color = '#4ade80';
+            } catch(e) {
+                benchUI.res.innerText = "Error";
+            } finally {
+                benchBtn.disabled = false;
+                benchBtn.innerHTML = '<i class="fas fa-tachometer-alt"></i> Run Stress Test';
+            }
+        };
+
+        // Chat Logic
+        els.newChatBtn.onclick = () => {
+            els.chat.innerHTML = `<div class="welcome-screen"><i class="fas fa-fingerprint"></i><h2>Initialize Corthrex</h2><p>Memory System Online.</p></div>`;
+        };
+
+        async function sendMessage() {
+            const text = els.input.value.trim();
+            if(!text) return;
+            const welcome = document.querySelector('.welcome-screen');
+            if(welcome) welcome.remove();
+
+            appendMessage('user', text);
+            els.input.value = '';
+            
+            const loader = appendMessage('assistant', '<i class="fas fa-circle-notch fa-spin"></i> Thinking...');
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        model: els.modelSelect.value,
+                        messages: [{role: 'user', content: text}],
+                        options: {
+                            temperature: parseFloat(els.temp.value),
+                            top_p: parseFloat(els.topP.value),
+                            num_ctx: parseInt(els.ctx.value)
+                        },
+                        system: els.sys.value 
+                    })
+                });
+                const data = await res.json();
+                loader.parentElement.remove();
+                appendMessage('assistant', data.message.content);
+            } catch(e) {
+                loader.innerHTML = '<span style="color:#ef4444">Connection Failed</span>';
+            }
+        }
+
+        function appendMessage(role, text) {
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            div.innerHTML = `<div class="message-content">${marked.parse(text)}</div>`;
+            els.chat.appendChild(div);
+            requestAnimationFrame(() => els.chat.scrollTop = els.chat.scrollHeight);
+            return div.querySelector('.message-content');
+        }
+
+        els.btn.onclick = sendMessage;
+        els.input.addEventListener('keydown', (e) => {
+            if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        });
+    </script>
+</body>
+</html>
