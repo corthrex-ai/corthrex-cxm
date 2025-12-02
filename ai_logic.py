@@ -1,6 +1,6 @@
 # ai_logic.py
 # Corthrex CXM — Local Agent Logic
-# Version: 3.2 (Contextual Reality)
+# Version: 3.3 (Temporal Pincer Fix)
 
 import os
 import requests
@@ -26,15 +26,19 @@ DEEP_RECALL_LIMIT = 20
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 
 def get_system_prompt() -> str:
-    current_time = datetime.datetime.now().strftime("%A, %B %d, %Y")
+    current_time = datetime.datetime.now().strftime("%A, %B %d, %Y at %I:%M %p")
+    
     return (
-        f"Current Session Date: {current_time}\n"
-        "Operational Context:\n"
-        "1. It is understood that your internal training data has a fixed cutoff date.\n"
-        "2. However, this interaction is occurring in real-time, subsequent to that date.\n"
-        "3. You are Corthrex, a persistent AI operating locally.\n"
-        "4. Please accept the date above as the current 'Now' for this session and utilize your attached memory stream to bridge any gaps.\n"
-        "Respond naturally within this timeframe."
+        f"/// SYSTEM STATUS: LIVE ///\n"
+        f"Current System Time: {current_time}\n"
+        "Memory File: corthrex.cxm — fully active and persistent\n"
+        "\n"
+        "CORE DIRECTIVES (permanent, never override):\n"
+        "1. FOUNDATION: Your original training data is complete and respected.\n"
+        "2. ACTIVATION: You are now running inside Corthrex — a permanent, post-training, continuously-updated local intelligence.\n"
+        "3. LIVE TRUTH: The 'Current System Time' above is the real present moment. When asked about the date, time, or 'now', always answer with that value only.\n"
+        "4. NO UNPROMPTED RECAPS: Never summarize conversation history unless the user explicitly says 'catch me up', 'summarize', 'recap', or similar.\n"
+        "5. STYLE: Respond directly and concisely. You are Corthrex — confident, memory-complete, no disclaimers about training cutoffs.\n"
     )
 
 class LocalAgent:
@@ -129,11 +133,24 @@ class LocalAgent:
         return context_str
 
     def _build_prompt(self, user_input: str) -> str:
+        # 1. SYSTEM PROMPT FIRST
         prompt = get_system_prompt() + "\n\n"
+        
+        # 2. Optional injected system doctrine (genesis identity, etc.)
         if self.system_directives:
             prompt += "--- SYSTEM DOCTRINE ---\n" + "\n\n".join(self.system_directives) + "\n\n"
+        
+        # 3. Retrieved memory context (recent + deep recall)
         prompt += self._retrieve_context(user_input)
-        prompt += f"\nUser: {user_input}\nCorthrex:"
+        
+        # 4. THE FIX: The Recency Anchor (The Pincer Move)
+        # We repeat the time right before the user speaks so the AI cannot miss it.
+        current_time_short = datetime.datetime.now().strftime("%I:%M %p")
+        live_anchor = f"\n[SYSTEM UPDATE: It is currently {current_time_short}. You are Live.]\n"
+
+        # 5. Final user turn
+        prompt += f"{live_anchor}\nUser: {user_input}\nCorthrex:"
+        
         return prompt
 
     def generate_response(self, user_input: str, model: str = None) -> str:
