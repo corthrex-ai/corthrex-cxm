@@ -1,60 +1,64 @@
-# Corthrex CXM — Permanent local AI memory that survives full shutdowns
+# Corthrex.cxm — Ultra-Dense Append-Only File System (256-byte EAIL blocks)
 
-**One file. Zero dependencies. Actually works.**
+**One file. Zero dependencies. Designed to survive decades.**
 
-- Current real-world size (after ~300 messages): **73 KB**  
-- Average message pair (user + assistant): **~250 bytes**  
-- Measured cold storage efficiency: **~4 messages per KB**
+Current real test (Dec 1, 2025)  
+- 324 records → **81.1 KB**  
+- ~250 bytes per record  
+- ~4 records per KB  
+- Write 2,489 ops/sec — Read 22,730 ops/sec → **HYPER-EFFICIENT**
 
-**Real capacity (measured, not theoretical):**
+**Measured capacity (actual math, not marketing)**
 
-| Storage          | Approx. messages | Years of daily heavy use* |
-|------------------|------------------|---------------------------|
-| 64 GB thumb drive| 268 million      | ~300 years                |
-| 1 TB SSD         | 4.2 billion      | ~5,000 years              |
-| 8 TB HDD         | 33.6 billion     | ~40,000 years             |
+| Storage            | Approx. records | Years at 2,400 records/day |
+|--------------------|------------------|----------------------------|
+| 64 GB thumb drive  | ~268 million     | ~300 years                 |
+| 1 TB SSD           | ~4.2 billion     | ~5,000 years               |
+| 8 TB HDD           | ~33.6 billion    | ~40,000 years              |
 
-\* ~2,400 messages per day (very heavy user) — measured on real hardware.
+No schema. No indexes. No background server. Survives full power loss.
 
-No other open-source local memory system even comes close.  
-Everything else uses SQLite + vectors + background servers that forget on restart.  
-This one doesn’t.
+## The Invention Is the File Format
 
-KEEP IN MIND - The UI and Memory Logic of this project is ongoing project - I have been working on the LOGIC 
-the main thing is the corthrex.cxm born from subpar storage file systems not made for AI memory.
+Everything else in this repo (Flask UI, Ollama demo) is just one possible front-end.  
+The real thing is the `corthrex.cxm` file itself — a new way to store sequential data streams with almost zero overhead.
 
-→ Double-click FULL_START.bat → talk → kill power → reboot → it still remembers. Forever.
+## Potential Use Cases (all unproven — just math + imagination)
+
+- **AI Memory & Chat History**  
+  Enterprise AI agents currently waste billions of dollars in storage and power on bloated vector DBs and cloud sync. 
+  A single 1 TB drive using this format could hold ~5,000 years of chat history for thousands of concurrent users — 
+  all local, all offline, zero recurring cost. (Demo in this repo is one tiny proof-of-concept.)
+
+- Banking & financial ledgers (immutable append-only trail)  
+- Air-traffic control event logs (survives blackouts, loads in milliseconds)  
+- Robotics lifelong learning memory (swap a microSD, the robot keeps its experience)  
+- IoT sensor streams (10+ years of 1 Hz data in <150 MB)  
+- Personal life-logging / quantified-self archives  
+- Compliance & audit trails (tamper-evident by design)  
+- Embedded devices with no storage budget  
+- Offline medical or scientific data collection  
+- Game save systems that never bloat
+
+Any domain that writes data in order and rarely deletes it is a candidate.
+
+## Quick Demo (AI Memory)
+
+The included Flask + Ollama demo shows one possible use: local AI that remembers everything forever.  
+Double-click `FULL_START.bat` → talk → kill power → reboot → it still knows you.
 
 Live demo (Nov 29, 2025): https://youtu.be/rxRsgQL1AuQ
-Live demo (November 29, 2025): https://youtu.be/rxRsgQL1AuQ  
 
-## 30-second start (Windows)
+## 30-Second Start (Windows)
 
 1. Install Ollama → https://ollama.com  
-   `ollama pull (at leaset 1 chat model)`
+   `ollama pull llama3.2:latest`
 
 2. Double-click `FULL_START.bat`  
-   → First run:  
-   • Creates `corthrex.cxm` if missing  
-   • Asks “Run genesis identity injection? (Y/N)” → type **Y**  
-   • Injects permanent core identity (via `genesis_update.py`)  
-   → Every run after: instantly loads full history and opens http://127.0.0.1:5000
+   → First run asks to inject genesis block (type **Y**)  
+   → Every run after loads instantly
 
-## What’s new as of November 30, 2025 (v3.3)
-
-- Real system clock is now injected on every turn → AI always knows the correct date/time  
-- No more unprompted recaps — only summarizes when you explicitly say “catch me up”, “summarize”, etc.  
-- Memory context is strictly ordered so old hallucinations can’t win  
-- Genesis identity block is now baked in from first run (and can be re-run anytime)
-
-The magic is still the same single `corthrex.cxm` file and the 256-byte EAIL protocol.
-
-## Want to update or add to your identity later?
+## Want to experiment with the file format?
 
 ```bash
-python genesis_update.py
-Runs in 2 seconds, appends new directives to the very top of memory.
-That’s it.
-One file. One double-click. Works forever.
-More improvements, tools, and model support coming — this project is actively developed.
-Welcome to permanent local memory.
+python genesis_update.py   # append anything you want to the top of the file
