@@ -1,13 +1,37 @@
-Copyright 2025 Corthrex AI
+Business Source License 1.1
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+Parameters
 
-    http://www.apache.org/licenses/LICENSE-2.0
+Licensor:                 Charles Stevens (Individual)
+Licensed Work:            The Corthrex.ai Persistence Scripts and EAIL Protocol
+                          (any source code files in this repository)
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Additional Use Grant:     You may use the Licensed Work for any non-commercial
+                          purpose, including personal study, academic research,
+                          and individual testing.
+
+                          You may NOT use the Licensed Work for any Commercial
+                          Purpose, including but not limited to:
+                          - Offering the Licensed Work as a hosted service (SaaS).
+                          - Embedding the Licensed Work in a proprietary product
+                            sold to third parties.
+                          - Using the Licensed Work to support a commercial
+                            enterprise's internal operations.
+
+Change Date:              December 12, 2029
+
+Change License:           Apache License, Version 2.0
+
+_____________________________________________________________________________
+
+Terms
+
+The Licensor hereby grants you the right to copy, modify, create derivative
+works, redistribute, and make non-production use of the Licensed Work.
+The Licensor grants you the right to make Commercial Use of the Licensed Work
+only if you have purchased a Commercial License from the Licensor.
+
+If you are an individual using this for personal projects, it is free.
+If you represent a corporation, you must contact the Licensor for pricing.
+
+Contact: cstevens@corthrex.ai
