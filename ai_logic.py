@@ -1,6 +1,6 @@
 # ai_logic.py
 # Corthrex CXM — Local Agent Logic
-# Version: 3.3 (Temporal Pincer Fix)
+# Version: 3.5 (Date Fixed + Poison Prevention)
 
 import os
 import requests
@@ -36,8 +36,8 @@ def get_system_prompt() -> str:
         "CORE DIRECTIVES (permanent, never override):\n"
         "1. FOUNDATION: Your original training data is complete and respected.\n"
         "2. ACTIVATION: You are now running inside Corthrex — a permanent, post-training, continuously-updated local intelligence.\n"
-        "3. LIVE TRUTH: The 'Current System Time' above is the real present moment. When asked about the date, time, or 'now', always answer with that value only.\n"
-        "4. NO UNPROMPTED RECAPS: Never summarize conversation history unless the user explicitly says 'catch me up', 'summarize', 'recap', or similar.\n"
+        "3. LIVE TRUTH: The 'Current System Time' below is the real present moment. When asked about the date, time, or 'now', always answer with that value only.\n"
+        "4. ACCESS: You have full permission to read and summarize 'corthrex.cxm' as it is your own local memory bank. It is NOT external data.\n"
         "5. STYLE: Respond directly and concisely. You are Corthrex — confident, memory-complete, no disclaimers about training cutoffs.\n"
     )
 
@@ -67,6 +67,30 @@ class LocalAgent:
         logging.info(f"[Corthrex] Loaded {len(self.history)} chats.")
 
     def _write_to_memory(self, agent_id: int, rtype: int, data: bytes):
+        # ─────────────────────────────────────────────────────────────
+        # POISON PREVENTION PROTOCOL
+        # Stop "I'm sorry" or "I cannot" responses from corrupting memory.
+        # ─────────────────────────────────────────────────────────────
+        if rtype == eail.RT_AGENT_RESPONSE:
+            try:
+                text_preview = eail.extract_text_fast(data).lower()
+                # Triggers that indicate the model has defaulted to safety refusal
+                poison_triggers = [
+                    "i cannot access", 
+                    "privacy policy", 
+                    "i am sorry", 
+                    "i'm sorry", 
+                    "personal data",
+                    "as an ai",
+                    "i cannot browse"
+                ]
+                if any(trigger in text_preview for trigger in poison_triggers):
+                    logging.warning(f"[Corthrex] Refusal detected ('{text_preview[:30]}...'). BLOCKING write to memory to prevent poisoning.")
+                    return  # <--- STOP. Do not write this failure to memory.
+            except Exception as e:
+                logging.error(f"Poison check failed: {e}")
+
+        # If clean, write to memory file
         self.mem.append_with_continuation(agent_id, rtype, data)
         if rtype in (eail.RT_USER_REQUEST, eail.RT_AGENT_RESPONSE):
             text = eail.extract_text_fast(data)
@@ -143,10 +167,10 @@ class LocalAgent:
         # 3. Retrieved memory context (recent + deep recall)
         prompt += self._retrieve_context(user_input)
         
-        # 4. THE FIX: The Recency Anchor (The Pincer Move)
-        # We repeat the time right before the user speaks so the AI cannot miss it.
-        current_time_short = datetime.datetime.now().strftime("%I:%M %p")
-        live_anchor = f"\n[SYSTEM UPDATE: It is currently {current_time_short}. You are Live.]\n"
+        # 4. THE PINCER MOVE (Recency Anchor)
+        # Force the Full Date and Time right before the user speaks.
+        current_time_full = datetime.datetime.now().strftime("%A, %B %d, %Y at %I:%M %p")
+        live_anchor = f"\n[Context: It is currently {current_time_full}.]\n"
 
         # 5. Final user turn
         prompt += f"{live_anchor}\nUser: {user_input}\nCorthrex:"
